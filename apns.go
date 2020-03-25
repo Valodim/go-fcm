@@ -167,6 +167,11 @@ type ApnsHeaders struct {
 	// Multiple notifications with the same collapse identifier are displayed to the user as
 	//  a single notification. The value of this key must not exceed 64 bytes.
 	CollapseID string `json:"apns-collapse-id,omitempty"`
+
+	// iOS 13 attributed required to send push notifications successfully to apple
+	// may be droped if not set.
+	// If you omit this header, the APNs server will assume alert and notification body is required
+	Type string `json:"apns-push-type,omitempty"`
 }
 
 // ApnsMessagePriority represents the priority of the notification. Specify one of the following values:
@@ -211,4 +216,15 @@ const (
 	// ApnsMutableContent flags the notification to be delievered via the notification
 	// service app extension.
 	ApnsMutableContent ApnsContentMutability = 1
+)
+
+// ApnsMessageType represents the message type of the push notification. Specify one of the following values:
+type ApnsMessageType string
+
+var (
+	// ApnsTypeBackground use in conjuction with content-available on iOS 13+
+	ApnsTypeBackground ApnsMessageType = "background"
+
+	// ApnsTypeAlert, if this is set a notifcation body is required by the push message
+	ApnsTypeAlert ApnsMessageType = "alert"
 )
