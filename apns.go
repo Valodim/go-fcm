@@ -77,6 +77,11 @@ type ApsDictionary struct {
 	// When this key is present, the system wakes up your app in the background and
 	// delivers the notification to its app delegate.
 	ContentAvailable int `json:"content-available,omitempty"`
+
+	// The notification service app extension flag. If the value is 1, the system passes
+	// the notification to your notification service app extension before delivery.
+	// Use your extension to modify the notification’s content.
+	MutableContent ApnsContentMutability `json:"mutable-content,omitempty"`
 }
 
 // ApnsAlert represents a APNS alert
@@ -192,4 +197,18 @@ const (
 	// ApnsContentAvailable flags the notification to be delivered to the user’s device in the background.
 	// iOS wakes up your app in the background and gives it up to 30 seconds to run.
 	ApnsContentAvailable ApnsContentAvailability = 1
+)
+
+// ApnsMutableContent represents the mutable-content key in a APNS notification
+// which may either be 1 or 0.
+type ApnsContentMutability int
+
+const (
+	// ApnsNonMutableContent flags the notification to be delievered directly to the user
+	// without waking up the notification service app extension.
+	ApnsNonMutableContent ApnsContentMutability = 0
+
+	// ApnsMutableContent flags the notification to be delievered via the notification
+	// service app extension.
+	ApnsMutableContent ApnsContentMutability = 1
 )
