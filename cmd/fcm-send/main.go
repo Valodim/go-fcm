@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/tevjef/go-fcm"
+	"github.com/Valodim/go-fcm"
 	"github.com/urfave/cli"
 )
 

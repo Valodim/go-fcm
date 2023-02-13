@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/tevjef/go-fcm"
+	"github.com/Valodim/go-fcm"
 )
 
 func main() {
