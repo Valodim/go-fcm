@@ -50,6 +50,7 @@ func main() {
 			Name:   "credentials-location",
 			EnvVar: "CREDENTIALS_LOCATION",
 			Usage:  "Location of the Firebase Admin SDK JSON credentials.",
+			Value:  "fcm-credentials.json",
 		},
 		cli.StringFlag{
 			Name:   "project-id",
