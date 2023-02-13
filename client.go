@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httputil"
+	"strings"
 )
 
 const (
@@ -47,33 +48,33 @@ func NewClient(projectID string, credentialsLocation string, opts ...Option) (*C
 }
 
 // Send sends a message to the FCM server.
-func (c *Client) Send(req *SendRequest) (*Message, error) {
+func (c *Client) Send(req *SendRequest) (string, error) {
 	// validate
 	if err := req.Message.Validate(); err != nil {
-		return nil, err
+		return "", err
 	}
 
 	// marshal message
 	data, err := json.Marshal(req)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	return c.send(data)
 }
 
 // send sends a request.
-func (c *Client) send(data []byte) (*Message, error) {
+func (c *Client) send(data []byte) (messageID string, err error) {
 	// create request
 	req, err := http.NewRequest("POST", c.endpoint, bytes.NewBuffer(data))
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	// get bearer token
 	token, err := c.tokenProvider.token()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	// add headers
@@ -83,7 +84,7 @@ func (c *Client) send(data []byte) (*Message, error) {
 	// execute request
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	defer resp.Body.Close()
@@ -93,26 +94,35 @@ func (c *Client) send(data []byte) (*Message, error) {
 		responseBytes, _ := httputil.DumpResponse(resp, true)
 
 		if resp.StatusCode >= http.StatusInternalServerError {
-			return nil, HttpError{
+			return "", HttpError{
 				RequestDump:  string(requestBytes),
 				ResponseDump: string(responseBytes),
 				Err:          fmt.Errorf(fmt.Sprintf("%d error: %s", resp.StatusCode, resp.Status)),
 			}
 		}
-		return nil, HttpError{
+		return "", HttpError{
 			RequestDump:  string(requestBytes),
 			ResponseDump: string(responseBytes),
 			Err:          fmt.Errorf("%d error: %s", resp.StatusCode, resp.Status),
 		}
 	}
 
-	// build return
-	response := new(Message)
-	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
-		return nil, err
+	type MessageResponse struct {
+		// The identifier of the message sent, in the format of projects/*/messages/{message_id}.
+		Name string `json:"name,omitempty"`
 	}
 
-	return response, nil
+	response := new(MessageResponse)
+	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
+		return "", err
+	}
+
+	lastIndex := strings.LastIndex(response.Name, "/")
+	if len(response.Name) > lastIndex {
+		return response.Name[lastIndex+1:], nil
+	}
+
+	return "", nil
 }
 
 // HttpError contains the dump of the request and response for debugging purposes.
