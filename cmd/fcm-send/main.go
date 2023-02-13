@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -26,9 +27,9 @@ func main() {
 			Name:  "topic, t",
 			Usage: "The name of the topic to send a message to.",
 		},
-		cli.StringFlag{
-			Name:  "token, k",
-			Usage: "The device topic or registration id to send a message to.",
+		cli.StringSliceFlag{
+			Name:  "tokens, k",
+			Usage: "The device topic or registration ids to send messages to.",
 		},
 		cli.StringFlag{
 			Name:  "condition, c",
@@ -72,7 +73,7 @@ func main() {
 
 func setupNotification(c *cli.Context) error {
 	topic := c.String("topic")
-	token := c.String("token")
+	tokens := c.StringSlice("tokens")
 	condition := c.String("condition")
 	title := c.String("title")
 	body := c.String("body")
@@ -80,19 +81,16 @@ func setupNotification(c *cli.Context) error {
 	credentialsLocation := c.String("credentials-location")
 	projectID := c.String("project-id")
 
-	message := &fcm.Message{
-		Topic:     topic,
-		Token:     token,
-		Condition: condition,
-		Notification: &fcm.Notification{
-			Title: title,
-			Body:  body,
+	message := &fcm.MulticastMessage{
+		Tokens: tokens,
+		Message: &fcm.Message{
+			Topic:     topic,
+			Condition: condition,
+			Notification: &fcm.Notification{
+				Title: title,
+				Body:  body,
+			},
 		},
-	}
-
-	sendRequest := &fcm.SendRequest{
-		ValidateOnly: validateOnly,
-		Message:      message,
 	}
 
 	client, err := fcm.NewClient(projectID, credentialsLocation)
@@ -100,12 +98,17 @@ func setupNotification(c *cli.Context) error {
 		return err
 	}
 
-	msg, err := client.Send(sendRequest)
+	var result *fcm.MulticastResponse
+	if validateOnly {
+		result, err = client.SendMulticast(context.Background(), message)
+	} else {
+		result, err = client.SendMulticastDryRun(context.Background(), message)
+	}
 	if err != nil {
 		return err
 	}
 
-	out, err := json.MarshalIndent(msg, " ", "  ")
+	out, err := json.MarshalIndent(result, " ", "  ")
 	if err != nil {
 		return err
 	}

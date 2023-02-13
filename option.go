@@ -9,12 +9,16 @@ import (
 type Option func(*Client) error
 
 // WithEndpoint returns Option to configure FCM Endpoint.
-func WithEndpoint(endpoint string) Option {
+func WithEndpoints(endpoint, batchEndpoint string) Option {
 	return func(c *Client) error {
 		if endpoint == "" {
 			return errors.New("invalid endpoint")
 		}
-		c.endpoint = endpoint
+		c.fcmEndpoint = endpoint
+		if endpoint == "" {
+			return errors.New("invalid batchEndpoint")
+		}
+		c.batchEndpoint = batchEndpoint
 		return nil
 	}
 }

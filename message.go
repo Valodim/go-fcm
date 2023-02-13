@@ -29,6 +29,15 @@ type SendRequest struct {
 	Message *Message `json:"message,omitempty"`
 }
 
+// SendResponse represents the status of an individual message that was sent as part of a batch
+// request.
+type SendResponse struct {
+	Success   bool
+	MessageID string
+	ErrorCode int
+	ErrorBody string
+}
+
 // Notification specifies the basic notification template to use across all platforms.
 type Notification struct {
 	// The notification's title.
@@ -87,7 +96,7 @@ func (msg *Message) Validate() error {
 		return ErrInvalidMessage
 	}
 
-	var targets = 0
+	targets := 0
 	// validate target: `topic` or `condition`, or `token`
 	if msg.Topic != "" {
 		targets = targets + 1

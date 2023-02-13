@@ -10,7 +10,11 @@ import (
 )
 
 const (
-	endpointFormat = "https://fcm.googleapis.com/v1/projects/%s/messages:send"
+	defaultEndpoint      = "https://fcm.googleapis.com/v1"
+	defaultBatchEndpoint = "https://fcm.googleapis.com/batch"
+
+	apiFormatVersionHeader = "X-GOOG-API-FORMAT-VERSION"
+	apiFormatVersion       = "2"
 )
 
 // Client abstracts the interaction between the application server and the
@@ -20,7 +24,12 @@ const (
 type Client struct {
 	// https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages/send
 	projectID     string
-	endpoint      string
+	fcmEndpoint   string
+	batchEndpoint string
+
+	// the endpoint for the project
+	sendEndpoint  string
+
 	client        *http.Client
 	tokenProvider *tokenProvider
 }
@@ -33,10 +42,13 @@ func NewClient(projectID string, credentialsLocation string, opts ...Option) (*C
 	}
 
 	c := &Client{
-		endpoint:      fmt.Sprintf(endpointFormat, projectID),
+		projectID:     projectID,
+		fcmEndpoint:   defaultEndpoint,
+		batchEndpoint: defaultBatchEndpoint,
 		client:        http.DefaultClient,
 		tokenProvider: tp,
 	}
+	c.sendEndpoint = fmt.Sprintf("%s/projects/%s/messages:send", c.fcmEndpoint, c.projectID)
 
 	for _, o := range opts {
 		if err := o(c); err != nil {
@@ -66,7 +78,7 @@ func (c *Client) Send(req *SendRequest) (string, error) {
 // send sends a request.
 func (c *Client) send(data []byte) (messageID string, err error) {
 	// create request
-	req, err := http.NewRequest("POST", c.endpoint, bytes.NewBuffer(data))
+	req, err := http.NewRequest("POST", c.sendEndpoint, bytes.NewBuffer(data))
 	if err != nil {
 		return "", err
 	}
