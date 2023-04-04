@@ -2,6 +2,7 @@ package fcm
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -60,7 +61,7 @@ func NewClient(projectID string, credentialsLocation string, opts ...Option) (*C
 }
 
 // Send sends a message to the FCM server.
-func (c *Client) Send(req *SendRequest) (string, error) {
+func (c *Client) Send(ctx context.Context, req *SendRequest) (string, error) {
 	// validate
 	if err := req.Message.Validate(); err != nil {
 		return "", err
@@ -72,13 +73,13 @@ func (c *Client) Send(req *SendRequest) (string, error) {
 		return "", err
 	}
 
-	return c.send(data)
+	return c.send(ctx, data)
 }
 
 // send sends a request.
-func (c *Client) send(data []byte) (messageID string, err error) {
+func (c *Client) send(ctx context.Context, data []byte) (messageID string, err error) {
 	// create request
-	req, err := http.NewRequest("POST", c.sendEndpoint, bytes.NewBuffer(data))
+	req, err := http.NewRequestWithContext(ctx, "POST", c.sendEndpoint, bytes.NewBuffer(data))
 	if err != nil {
 		return "", err
 	}
